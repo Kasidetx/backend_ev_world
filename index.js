@@ -34,7 +34,7 @@ app.get("/cars", (req, res) => {
           return res.status(500).json({ error: err.message });
         }
         if (brands.length === 0) {
-          return res.json([]);
+          return res.send([]);
         }
   
         const result = [];
@@ -67,7 +67,7 @@ app.get("/cars", (req, res) => {
   
               remaining -= 1;
               if (remaining === 0) {
-                res.json(result);
+                res.send(result);
               }
             }
           );
