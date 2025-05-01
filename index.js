@@ -9,6 +9,10 @@ app.use(express.json());
 
 const connection = mysql.createConnection(process.env.DATABASE_URL);
 
+app.get('/', (req, res) => {
+  res.send('/news or /cars')
+})
+
 // ดึงข่าวทั้งหมด
 app.get("/news", (req, res) => {
   connection.query(
