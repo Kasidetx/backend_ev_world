@@ -18,7 +18,29 @@ app.get("/news", (req, res) => {
   connection.query(
     "SELECT title, date, description, image FROM news",
     function (err, results, fields) {
-      res.send(results);
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      // ฟังก์ชันแปลงเดือนเป็นภาษาไทย
+      const months = [
+        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+      ];
+
+      const formattedResults = results.map(news => {
+        const d = new Date(news.date);
+        const day = d.getDate();
+        const month = months[d.getMonth()];
+        const year = d.getFullYear();
+
+        return {
+          ...news,
+          date: `${day} ${month} ${year}`
+        };
+      });
+
+      res.send(formattedResults);
     }
   );
 });
