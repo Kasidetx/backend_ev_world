@@ -1,0 +1,19 @@
+{
+  "name": "backend_ev_world",
+  "version": "1.0.0",
+  "description": "-",
+  "keywords": [
+    "-"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "-"
+  },
+  "license": "UNLICENSED",
+  "author": "Kasidet Sae-oueng",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "-"
+  }
+}
