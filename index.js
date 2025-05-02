@@ -13,7 +13,7 @@ const connection = mysql.createConnection(process.env.DATABASE_URL);
 app.use("/images", express.static("images"));
 
 app.get('/', (req, res) => {
-  res.send('/news or /cars')
+  res.send('/news, /cars, or /brands')
 })
 
 // ดึงข่าวทั้งหมด
@@ -41,13 +41,119 @@ app.get("/news", (req, res) => {
           ...news,
           date: `${day} ${month} ${year}`,
           // Make sure image paths include the /images prefix if they don't already
-          image: news.image && !news.image.startsWith('/images/') && !news.image.startsWith('http')
-            ? `/images/${news.image}`
+          image: news.image && !news.image.startsWith('/images/') && !news.image.startsWith('http') 
+            ? `/images/${news.image}` 
             : news.image
         };
       });
 
       res.send(formattedResults);
+    }
+  );
+});
+
+// ดึงแบรนด์ทั้งหมด
+app.get("/brands", (req, res) => {
+  connection.query(
+    "SELECT id, name, image FROM brands",
+    (err, results) => {
+      if (err) {
+        console.error("Error fetching brands:", err);
+        return res.status(500).json({ error: err.message });
+      }
+      
+      // Format image paths
+      const formattedResults = results.map(brand => ({
+        ...brand,
+        image: brand.image && !brand.image.startsWith('/images/') && !brand.image.startsWith('http') 
+          ? `/images/${brand.image}` 
+          : brand.image
+      }));
+      
+      res.send(formattedResults);
+    }
+  );
+});
+
+// เพิ่มแบรนด์ใหม่
+app.post("/brands", (req, res) => {
+  const { name, image } = req.body;
+  
+  if (!name) {
+    return res.status(400).json({ error: "Brand name is required" });
+  }
+  
+  connection.query(
+    "INSERT INTO brands (name, image) VALUES (?, ?)",
+    [name, image],
+    (err, results) => {
+      if (err) {
+        console.error("Error adding brand:", err);
+        return res.status(500).json({ error: err.message });
+      }
+      
+      res.status(201).json({ 
+        id: results.insertId,
+        name,
+        image: image && !image.startsWith('/images/') && !image.startsWith('http') 
+          ? `/images/${image}` 
+          : image
+      });
+    }
+  );
+});
+
+// แก้ไขแบรนด์
+app.put("/brands/:id", (req, res) => {
+  const { id } = req.params;
+  const { name, image } = req.body;
+  
+  if (!name) {
+    return res.status(400).json({ error: "Brand name is required" });
+  }
+  
+  connection.query(
+    "UPDATE brands SET name = ?, image = ? WHERE id = ?",
+    [name, image, id],
+    (err, results) => {
+      if (err) {
+        console.error("Error updating brand:", err);
+        return res.status(500).json({ error: err.message });
+      }
+      
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      res.json({ 
+        id: parseInt(id),
+        name,
+        image: image && !image.startsWith('/images/') && !image.startsWith('http') 
+          ? `/images/${image}` 
+          : image
+      });
+    }
+  );
+});
+
+// ลบแบรนด์
+app.delete("/brands/:id", (req, res) => {
+  const { id } = req.params;
+  
+  connection.query(
+    "DELETE FROM brands WHERE id = ?",
+    [id],
+    (err, results) => {
+      if (err) {
+        console.error("Error deleting brand:", err);
+        return res.status(500).json({ error: err.message });
+      }
+      
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      res.status(204).send();
     }
   );
 });
@@ -83,8 +189,8 @@ app.get("/cars", (req, res) => {
             }
 
             // Format image path for brand
-            const brandImage = brand.image && !brand.image.startsWith('/images/') && !brand.image.startsWith('http')
-              ? `/images/${brand.image}`
+            const brandImage = brand.image && !brand.image.startsWith('/images/') && !brand.image.startsWith('http') 
+              ? `/images/${brand.image}` 
               : brand.image;
 
             result.push({
@@ -110,7 +216,7 @@ app.get("/cars", (req, res) => {
       });
     }
   );
-});
+});  
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`API listening on port ${PORT}`));
