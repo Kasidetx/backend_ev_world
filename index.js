@@ -9,6 +9,8 @@ app.use(express.json());
 
 const connection = mysql.createConnection(process.env.DATABASE_URL);
 
+app.use("/images", express.static("images"));
+
 app.get('/', (req, res) => {
   res.send('/news or /cars')
 })
