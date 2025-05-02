@@ -1,224 +1,146 @@
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static images (including nested folders) under /images/*
+app.use(
+  "/images",
+  express.static(path.join(__dirname, "images"))
+);
+
 const connection = mysql.createConnection(process.env.DATABASE_URL);
 
-// Serve static images from the images directory
-app.use("/images", express.static("images"));
-
 app.get('/', (req, res) => {
-  res.send('/news, /cars, or /brands')
-})
+  res.send('/news, /cars, or /brands');
+});
 
-// ดึงข่าวทั้งหมด
+// ——— NEWS ———
 app.get("/news", (req, res) => {
   connection.query(
     "SELECT title, date, description, image FROM news",
-    function (err, results, fields) {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
 
-      // ฟังก์ชันแปลงเดือนเป็นภาษาไทย
       const months = [
-        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน",
+        "พฤษภาคม", "มิถุนายน", "กรกฎาคม",
+        "สิงหาคม", "กันยายน", "ตุลาคม",
+        "พฤศจิกายน", "ธันวาคม"
       ];
 
-      const formattedResults = results.map(news => {
-        const d = new Date(news.date);
+      const formatted = results.map(item => {
+        const d = new Date(item.date);
         const day = d.getDate();
         const month = months[d.getMonth()];
         const year = d.getFullYear();
 
+        // prefix sub-folder news
+        let img = item.image || "";
+        if (img && !img.startsWith("/images/") && !img.startsWith("http")) {
+          img = `/images/news/${img}`;
+        }
+
         return {
-          ...news,
-          date: `${day} ${month} ${year}`,
-          // Make sure image paths include the /images prefix if they don't already
-          image: news.image && !news.image.startsWith('/images/') && !news.image.startsWith('http') 
-            ? `/images/${news.image}` 
-            : news.image
+          title:       item.title,
+          date:        `${day} ${month} ${year}`,
+          description: item.description,
+          image:       img
         };
       });
 
-      res.send(formattedResults);
+      res.json(formatted);
     }
   );
 });
 
-// ดึงแบรนด์ทั้งหมด
+// ——— BRANDS ———
 app.get("/brands", (req, res) => {
   connection.query(
     "SELECT id, name, image FROM brands",
     (err, results) => {
-      if (err) {
-        console.error("Error fetching brands:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      
-      // Format image paths
-      const formattedResults = results.map(brand => ({
-        ...brand,
-        image: brand.image && !brand.image.startsWith('/images/') && !brand.image.startsWith('http') 
-          ? `/images/${brand.image}` 
-          : brand.image
-      }));
-      
-      res.send(formattedResults);
-    }
-  );
-});
+      if (err) return res.status(500).json({ error: err.message });
 
-// เพิ่มแบรนด์ใหม่
-app.post("/brands", (req, res) => {
-  const { name, image } = req.body;
-  
-  if (!name) {
-    return res.status(400).json({ error: "Brand name is required" });
-  }
-  
-  connection.query(
-    "INSERT INTO brands (name, image) VALUES (?, ?)",
-    [name, image],
-    (err, results) => {
-      if (err) {
-        console.error("Error adding brand:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      
-      res.status(201).json({ 
-        id: results.insertId,
-        name,
-        image: image && !image.startsWith('/images/') && !image.startsWith('http') 
-          ? `/images/${image}` 
-          : image
+      const formatted = results.map(b => {
+        let img = b.image || "";
+        if (img && !img.startsWith("/images/") && !img.startsWith("http")) {
+          img = `/images/brands/${img}`;
+        }
+        return {
+          id:    b.id,
+          name:  b.name,
+          image: img
+        };
       });
+
+      res.json(formatted);
     }
   );
 });
 
-// แก้ไขแบรนด์
-app.put("/brands/:id", (req, res) => {
-  const { id } = req.params;
-  const { name, image } = req.body;
-  
-  if (!name) {
-    return res.status(400).json({ error: "Brand name is required" });
-  }
-  
-  connection.query(
-    "UPDATE brands SET name = ?, image = ? WHERE id = ?",
-    [name, image, id],
-    (err, results) => {
-      if (err) {
-        console.error("Error updating brand:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      
-      if (results.affectedRows === 0) {
-        return res.status(404).json({ error: "Brand not found" });
-      }
-      
-      res.json({ 
-        id: parseInt(id),
-        name,
-        image: image && !image.startsWith('/images/') && !image.startsWith('http') 
-          ? `/images/${image}` 
-          : image
-      });
-    }
-  );
-});
+// ——— ADD / UPDATE / DELETE BRANDS ———
+// ถ้าต้องการให้ POST/PUT เก็บแค่ชื่อไฟล์แล้วให้เรา prefix ใน response ก็ทำเหมือน GET ได้เลย
 
-// ลบแบรนด์
-app.delete("/brands/:id", (req, res) => {
-  const { id } = req.params;
-  
-  connection.query(
-    "DELETE FROM brands WHERE id = ?",
-    [id],
-    (err, results) => {
-      if (err) {
-        console.error("Error deleting brand:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      
-      if (results.affectedRows === 0) {
-        return res.status(404).json({ error: "Brand not found" });
-      }
-      
-      res.status(204).send();
-    }
-  );
-});
-
-// ดึงรถยนต์ทั้งหมด พร้อมรุ่น (join ผ่าน foreign key brand_id)
+// ——— CARS & MODELS ———
 app.get("/cars", (req, res) => {
-  // 1) ดึง list แบรนด์จากตาราง brands
   connection.query(
     "SELECT id, name, image FROM brands",
     (err, brands) => {
-      if (err) {
-        console.error("Error fetching brands:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      if (brands.length === 0) {
-        return res.send([]);
-      }
+      if (err) return res.status(500).json({ error: err.message });
+      if (!brands.length) return res.json([]);
 
-      const result = [];
+      const output = [];
       let remaining = brands.length;
 
-      // 2) สำหรับแต่ละแบรนด์ ดึงรุ่นจากตาราง car_models
       brands.forEach(brand => {
         connection.query(
-          `SELECT model, price, description, car_image 
-           FROM car_models 
-           WHERE brand_id = ?`,
+          "SELECT model, price, description, car_image FROM car_models WHERE brand_id = ?",
           [brand.id],
           (err2, models) => {
-            if (err2) {
-              console.error(`Error fetching models for brand ${brand.id}:`, err2);
-              return res.status(500).json({ error: err2.message });
+            if (err2) return res.status(500).json({ error: err2.message });
+
+            // brand image
+            let brandImg = brand.image || "";
+            if (brandImg && !brandImg.startsWith("/images/") && !brandImg.startsWith("http")) {
+              brandImg = `/images/brands/${brandImg}`;
             }
 
-            // Format image path for brand
-            const brandImage = brand.image && !brand.image.startsWith('/images/') && !brand.image.startsWith('http') 
-              ? `/images/${brand.image}` 
-              : brand.image;
-
-            result.push({
-              id: brand.id,
-              name: brand.name,
-              image: brandImage,
-              models: models.map(m => ({
-                model: m.model,
-                price: m.price,
+            // models images
+            const mods = models.map(m => {
+              let ci = m.car_image || "";
+              if (ci && !ci.startsWith("/images/") && !ci.startsWith("http")) {
+                ci = `/images/cars/${ci}`;
+              }
+              return {
+                model:       m.model,
+                price:       m.price,
                 description: m.description,
-                carImage: m.car_image && !m.car_image.startsWith('/images/') && !m.car_image.startsWith('http')
-                  ? `/images/${m.car_image}`
-                  : m.car_image
-              }))
+                carImage:    ci
+              };
             });
 
-            remaining -= 1;
-            if (remaining === 0) {
-              res.send(result);
+            output.push({
+              id:     brand.id,
+              name:   brand.name,
+              image:  brandImg,
+              models: mods
+            });
+
+            if (--remaining === 0) {
+              res.json(output);
             }
           }
         );
       });
     }
   );
-});  
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`API listening on port ${PORT}`));
-
 module.exports = app;
