@@ -124,8 +124,8 @@ app.get("/cars", (req, res) => {
             // models images
             const mods = models.map(m => {
               let ci = m.car_image || "";
-              if (ci && !ci.startsWith("/images/") && !ci.startsWith("http")) {
-                ci = `${blobBase}/images/cars/${ci}`;
+              if (ci && !ci.startsWith("http")) {
+                ci = `${blobBase}/cars/${ci}`;
               }
               return {
                 model: m.model,
