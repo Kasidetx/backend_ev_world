@@ -9,10 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static images (including nested folders) under /images/*
-app.use(
-  "/images",
-  express.static(path.join(__dirname, "images"))
-);
+const blobBase = process.env.BLOB_URL;
 
 const connection = mysql.createConnection(process.env.DATABASE_URL);
 
@@ -42,8 +39,8 @@ app.get("/news", (req, res) => {
 
         // prefix sub-folder news
         let img = item.image || "";
-        if (img && !img.startsWith("/images/") && !img.startsWith("http")) {
-          img = `/images/news/${img}`;
+        if (img && !img.startsWith("http")) {
+          img = `${blobBase}/news/${img}`;
         }
 
         return {
@@ -68,10 +65,11 @@ app.get("/brands", (req, res) => {
 
       const formatted = results.map(b => {
         const raw = b.image || "";
-        const fileName = path.basename(raw);               // ex: "byd_logo.png"
+        const fileName = path.basename(raw); // เช่น "byd_logo.png"
         const img = raw.startsWith("http")
-          ? raw                                        // กรณีเก็บ URL เต็มมา
-          : `/images/brands/${fileName}`;               // จะได้ "/images/brands/byd_logo.png"
+          ? raw
+          : `${blobBase}/brands/${fileName}`; // ใช้ blob storage แทน /images
+
         return {
           id: b.id,
           name: b.name,
@@ -118,10 +116,10 @@ app.get("/cars", (req, res) => {
 
             // brand image
             const rawBrand = brand.image || "";
-            const brandFile = path.basename(rawBrand);           // ex: "byd_logo.png"
+            const brandFile = path.basename(rawBrand);
             const brandImg = rawBrand.startsWith("http")
               ? rawBrand
-              : `/images/brands/${brandFile}`;
+              : `${blobBase}/brands/${brandFile}`; // ถ้าต้องการดึงจาก blob ด้วยก็ปรับตรงนี้ด้วย
 
             // models images
             const mods = models.map(m => {
