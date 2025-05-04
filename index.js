@@ -47,10 +47,10 @@ app.get("/news", (req, res) => {
         }
 
         return {
-          title:       item.title,
-          date:        `${day} ${month} ${year}`,
+          title: item.title,
+          date: `${day} ${month} ${year}`,
           description: item.description,
-          image:       img
+          image: img
         };
       });
 
@@ -67,13 +67,14 @@ app.get("/brands", (req, res) => {
       if (err) return res.status(500).json({ error: err.message });
 
       const formatted = results.map(b => {
-        let img = b.image || "";
-        if (img && !img.startsWith("/images/") && !img.startsWith("http")) {
-          img = `/images/brands/${img}`;
-        }
+        const raw = b.image || "";
+        const fileName = path.basename(raw);               // ex: "byd_logo.png"
+        const img = raw.startsWith("http")
+          ? raw                                        // กรณีเก็บ URL เต็มมา
+          : `/images/brands/${fileName}`;               // จะได้ "/images/brands/byd_logo.png"
         return {
-          id:    b.id,
-          name:  b.name,
+          id: b.id,
+          name: b.name,
           image: img
         };
       });
@@ -105,10 +106,11 @@ app.get("/cars", (req, res) => {
             if (err2) return res.status(500).json({ error: err2.message });
 
             // brand image
-            let brandImg = brand.image || "";
-            if (brandImg && !brandImg.startsWith("/images/") && !brandImg.startsWith("http")) {
-              brandImg = `/images/brands/${brandImg}`;
-            }
+            const rawBrand = brand.image || "";
+            const brandFile = path.basename(rawBrand);           // ex: "byd_logo.png"
+            const brandImg = rawBrand.startsWith("http")
+              ? rawBrand
+              : `/images/brands/${brandFile}`;
 
             // models images
             const mods = models.map(m => {
@@ -117,17 +119,17 @@ app.get("/cars", (req, res) => {
                 ci = `/images/cars/${ci}`;
               }
               return {
-                model:       m.model,
-                price:       m.price,
+                model: m.model,
+                price: m.price,
                 description: m.description,
-                carImage:    ci
+                carImage: ci
               };
             });
 
             output.push({
-              id:     brand.id,
-              name:   brand.name,
-              image:  brandImg,
+              id: brand.id,
+              name: brand.name,
+              image: brandImg,
               models: mods
             });
 
