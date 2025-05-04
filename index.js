@@ -86,34 +86,14 @@ app.get("/brands", (req, res) => {
 
 // ——— ADD / UPDATE / DELETE BRANDS ———
 // ถ้าต้องการให้ POST/PUT เก็บแค่ชื่อไฟล์แล้วให้เรา prefix ใน response ก็ทำเหมือน GET ได้เลย
-app.post("/brands", upload.single('image'), (req, res) => {
-  const { name } = req.body;
-  
-  if (!name) {
-    return res.status(400).json({ error: "Brand name is required" });
-  }
-  
-  // Get the filename of the uploaded image
-  let imageName = null;
-  if (req.file) {
-    imageName = req.file.filename;
-  }
-  
+app.post("/brands", (req, res) => {
+  const { name, image } = req.body;
   connection.query(
     "INSERT INTO brands (name, image) VALUES (?, ?)",
-    [name, imageName],
+    [name, image],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
-      
-      // Construct response with image path for client
-      const imageUrl = imageName ? `/images/brands/${imageName}` : null;
-      
-      res.status(201).json({ 
-        id: results.insertId, 
-        name, 
-        image: imageName,
-        imageUrl: imageUrl 
-      });
+      res.json({ id: results.insertId, name, image });
     }
   );
 });
