@@ -13,12 +13,12 @@ const blobBase = process.env.BLOB_URL;
 
 const connection = mysql.createConnection(process.env.DATABASE_URL);
 
-app.get('/', (req, res) => {
+app.get('/', (res) => {
   res.send('https://ltp65qvsepbjguhn.public.blob.vercel-storage.com/');
 });
 
 // ——— NEWS ———
-app.get("/news", (req, res) => {
+app.get("/news", (res) => {
   connection.query(
     "SELECT title, date, description, image FROM news",
     (err, results) => {
@@ -57,7 +57,7 @@ app.get("/news", (req, res) => {
 });
 
 // ——— BRANDS ———
-app.get("/brands", (req, res) => {
+app.get("/brands", (res) => {
   connection.query(
     "SELECT id, name, image FROM brands",
     (err, results) => {
@@ -97,7 +97,7 @@ app.post("/brands", (req, res) => {
 });
 
 // ——— CARS & MODELS ———
-app.get("/cars", (req, res) => {
+app.get("/cars", (res) => {
   connection.query(
     "SELECT id, name, image FROM brands",
     (err, brands) => {
