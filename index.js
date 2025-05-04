@@ -18,7 +18,7 @@ app.get('/', (res) => {
 });
 
 // ——— NEWS ———
-app.get("/news", (res) => {
+app.get("/news", (req, res) => {
   connection.query(
     "SELECT title, date, description, image FROM news",
     (err, results) => {
@@ -57,7 +57,7 @@ app.get("/news", (res) => {
 });
 
 // ——— BRANDS ———
-app.get("/brands", (res) => {
+app.get("/brands", (req, res) => {
   connection.query(
     "SELECT id, name, image FROM brands",
     (err, results) => {
@@ -97,7 +97,7 @@ app.post("/brands", (req, res) => {
 });
 
 // ——— CARS & MODELS ———
-app.get("/cars", (res) => {
+app.get("/cars", (req, res) => {
   connection.query(
     "SELECT id, name, image FROM brands",
     (err, brands) => {
