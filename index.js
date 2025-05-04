@@ -13,7 +13,7 @@ const blobBase = process.env.BLOB_URL;
 
 const connection = mysql.createConnection(process.env.DATABASE_URL);
 
-app.get('/', (res) => {
+app.get('/', (req, res) => {
   res.send('https://ltp65qvsepbjguhn.public.blob.vercel-storage.com/');
 });
 
