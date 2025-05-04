@@ -14,7 +14,7 @@ const blobBase = process.env.BLOB_URL;
 const connection = mysql.createConnection(process.env.DATABASE_URL);
 
 app.get('/', (req, res) => {
-  res.send('/news, /cars, or /brands');
+  res.send('https://ltp65qvsepbjguhn.public.blob.vercel-storage.com/');
 });
 
 // ——— NEWS ———
@@ -119,7 +119,7 @@ app.get("/cars", (req, res) => {
             const brandFile = path.basename(rawBrand);
             const brandImg = rawBrand.startsWith("http")
               ? rawBrand
-              : `${blobBase}/brands/${brandFile}`; // ถ้าต้องการดึงจาก blob ด้วยก็ปรับตรงนี้ด้วย
+              : `${blobBase}/brands/${brandFile}`;
 
             // models images
             const mods = models.map(m => {
