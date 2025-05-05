@@ -131,8 +131,25 @@ app.get("/brands", (req, res) => {
   );
 });
 
-// ——— ADD / UPDATE / DELETE BRANDS ———
-// ถ้าต้องการให้ POST/PUT เก็บแค่ชื่อไฟล์แล้วให้เรา prefix ใน response ก็ทำเหมือน GET ได้เลย
+// ——— CREATE BRAND ———
+app.post("/brands", (req, res) => {
+  const { name, image } = req.body;
+  connection.query(
+    "INSERT INTO brands (name, image) VALUES (?, ?)",
+    [name, image],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      // คืน id ที่เพิ่งสร้างกลับไปให้ client รู้
+      res.status(201).json({
+        id: results.insertId,
+        name,
+        image
+      });
+    }
+  );
+});
+
+// ——— UPDATE BRAND ———
 app.put("/brands/:id", (req, res) => {
   const { id } = req.params;
   const { name, image } = req.body;
@@ -149,6 +166,7 @@ app.put("/brands/:id", (req, res) => {
   );
 });
 
+// ——— DELETE BRAND ———
 app.delete("/brands/:id", (req, res) => {
   const { id } = req.params;
   connection.query(
