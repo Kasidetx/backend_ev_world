@@ -44,6 +44,7 @@ app.get("/news", (req, res) => {
         }
 
         return {
+          id: item.id,
           title: item.title,
           date: `${day} ${month} ${year}`,
           description: item.description,
