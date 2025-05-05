@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
 // ——— NEWS ———
 app.get("/news", (req, res) => {
   connection.query(
-    "SELECT title, date, description, image FROM news",
+    "SELECT id, title, date, description, image FROM news",
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
 
@@ -56,6 +56,55 @@ app.get("/news", (req, res) => {
   );
 });
 
+// ——— CREATE NEWS ———
+app.post("/news", (req, res) => {
+  const { title, date, description, image } = req.body;
+  connection.query(
+    "INSERT INTO news (title, date, description, image) VALUES (?, ?, ?, ?)",
+    [title, date, description, image],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({
+        id: results.insertId,
+        title, date, description, image
+      });
+    }
+  );
+});
+
+// ——— UPDATE NEWS ———
+app.put("/news/:id", (req, res) => {
+  const { id } = req.params;
+  const { title, date, description, image } = req.body;
+  connection.query(
+    "UPDATE news SET title = ?, date = ?, description = ?, image = ? WHERE id = ?",
+    [title, date, description, image, id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: "News not found" });
+      }
+      res.json({ id, title, date, description, image });
+    }
+  );
+});
+
+// ——— DELETE NEWS ———
+app.delete("/news/:id", (req, res) => {
+  const { id } = req.params;
+  connection.query(
+    "DELETE FROM news WHERE id = ?",
+    [id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: "News not found" });
+      }
+      res.json({ success: true });
+    }
+  );
+});
+
 // ——— BRANDS ———
 app.get("/brands", (req, res) => {
   connection.query(
@@ -84,14 +133,33 @@ app.get("/brands", (req, res) => {
 
 // ——— ADD / UPDATE / DELETE BRANDS ———
 // ถ้าต้องการให้ POST/PUT เก็บแค่ชื่อไฟล์แล้วให้เรา prefix ใน response ก็ทำเหมือน GET ได้เลย
-app.post("/brands", (req, res) => {
+app.put("/brands/:id", (req, res) => {
+  const { id } = req.params;
   const { name, image } = req.body;
   connection.query(
-    "INSERT INTO brands (name, image) VALUES (?, ?)",
-    [name, image],
+    "UPDATE brands SET name = ?, image = ? WHERE id = ?",
+    [name, image, id],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: results.insertId, name, image });
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      res.json({ id, name, image });
+    }
+  );
+});
+
+app.delete("/brands/:id", (req, res) => {
+  const { id } = req.params;
+  connection.query(
+    "DELETE FROM brands WHERE id = ?",
+    [id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      res.json({ success: true });
     }
   );
 });
@@ -109,29 +177,30 @@ app.get("/cars", (req, res) => {
 
       brands.forEach(brand => {
         connection.query(
-          "SELECT model, price, description, car_image FROM car_models WHERE brand_id = ?",
+          "SELECT id, model, price, description, car_image FROM car_models WHERE brand_id = ?",
           [brand.id],
           (err2, models) => {
             if (err2) return res.status(500).json({ error: err2.message });
 
-            // brand image
+            // แปลง URL ภาพแบรนด์
             const rawBrand = brand.image || "";
             const brandFile = path.basename(rawBrand);
             const brandImg = rawBrand.startsWith("http")
               ? rawBrand
               : `${blobBase}/brands/${brandFile}`;
 
-            // models images
+            // แปลง URL ภาพโมเดล
             const mods = models.map(m => {
               let ci = m.car_image || "";
               if (ci && !ci.startsWith("http")) {
-                ci = `${blobBase}/cars/${ci}`;
+                ci = `${blobBase}/cars/${path.basename(ci)}`;
               }
               return {
+                id: m.id,
                 model: m.model,
                 price: m.price,
                 description: m.description,
-                carImage: ci
+                car_image: ci
               };
             });
 
@@ -148,6 +217,48 @@ app.get("/cars", (req, res) => {
           }
         );
       });
+    }
+  );
+});
+
+// ——— CREATE CAR_MODEL ———
+app.post("/cars", (req, res) => {
+  const { brand_id, model, price, description, car_image } = req.body;
+  connection.query(
+    "INSERT INTO car_models (brand_id, model, price, description, car_image) VALUES (?, ?, ?, ?, ?)",
+    [brand_id, model, price, description, car_image],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id: results.insertId, brand_id, model, price, description, car_image });
+    }
+  );
+});
+
+// ——— UPDATE CAR_MODEL ———
+app.put("/cars/:id", (req, res) => {
+  const { id } = req.params;
+  const { brand_id, model, price, description, car_image } = req.body;
+  connection.query(
+    "UPDATE car_models SET brand_id=?, model=?, price=?, description=?, car_image=? WHERE id=?",
+    [brand_id, model, price, description, car_image, id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (results.affectedRows === 0) return res.status(404).json({ error: "Not found" });
+      res.json({ id, brand_id, model, price, description, car_image });
+    }
+  );
+});
+
+// ——— DELETE CAR_MODEL ———
+app.delete("/cars/:id", (req, res) => {
+  const { id } = req.params;
+  connection.query(
+    "DELETE FROM car_models WHERE id = ?",
+    [id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (results.affectedRows === 0) return res.status(404).json({ error: "Not found" });
+      res.json({ success: true });
     }
   );
 });
