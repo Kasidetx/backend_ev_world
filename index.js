@@ -8,7 +8,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static images (including nested folders) under /images/*
 const blobBase = process.env.BLOB_URL;
 
 const connection = mysql.createConnection(process.env.DATABASE_URL);
@@ -17,7 +16,6 @@ app.get('/', (req, res) => {
   res.send('https://ltp65qvsepbjguhn.public.blob.vercel-storage.com/');
 });
 
-// ——— NEWS ———
 app.get("/news", (req, res) => {
   connection.query(
     "SELECT id, title, date, description, image FROM news",
@@ -37,7 +35,6 @@ app.get("/news", (req, res) => {
         const month = months[d.getMonth()];
         const year = d.getFullYear();
 
-        // prefix sub-folder news
         let img = item.image || "";
         if (img && !img.startsWith("http")) {
           img = `${blobBase}/news/${img}`;
@@ -57,7 +54,6 @@ app.get("/news", (req, res) => {
   );
 });
 
-// ——— CREATE NEWS ———
 app.post("/news", (req, res) => {
   const { title, date, description, image } = req.body;
   connection.query(
@@ -73,7 +69,6 @@ app.post("/news", (req, res) => {
   );
 });
 
-// ——— UPDATE NEWS ———
 app.put("/news/:id", (req, res) => {
   const { id } = req.params;
   const { title, date, description, image } = req.body;
@@ -90,7 +85,6 @@ app.put("/news/:id", (req, res) => {
   );
 });
 
-// ——— DELETE NEWS ———
 app.delete("/news/:id", (req, res) => {
   const { id } = req.params;
   connection.query(
@@ -115,10 +109,10 @@ app.get("/brands", (req, res) => {
 
       const formatted = results.map(b => {
         const raw = b.image || "";
-        const fileName = path.basename(raw); // เช่น "byd_logo.png"
+        const fileName = path.basename(raw);
         const img = raw.startsWith("http")
           ? raw
-          : `${blobBase}/brands/${fileName}`; // ใช้ blob storage แทน /images
+          : `${blobBase}/brands/${fileName}`;
 
         return {
           id: b.id,
@@ -132,7 +126,6 @@ app.get("/brands", (req, res) => {
   );
 });
 
-// ——— CREATE BRAND ———
 app.post("/brands", (req, res) => {
   const { name, image } = req.body;
   connection.query(
@@ -140,7 +133,6 @@ app.post("/brands", (req, res) => {
     [name, image],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
-      // คืน id ที่เพิ่งสร้างกลับไปให้ client รู้
       res.status(201).json({
         id: results.insertId,
         name,
@@ -150,7 +142,6 @@ app.post("/brands", (req, res) => {
   );
 });
 
-// ——— UPDATE BRAND ———
 app.put("/brands/:id", (req, res) => {
   const { id } = req.params;
   const { name, image } = req.body;
@@ -167,7 +158,6 @@ app.put("/brands/:id", (req, res) => {
   );
 });
 
-// ——— DELETE BRAND ———
 app.delete("/brands/:id", (req, res) => {
   const { id } = req.params;
   connection.query(
@@ -183,7 +173,7 @@ app.delete("/brands/:id", (req, res) => {
   );
 });
 
-// ——— CARS & MODELS ———
+// ——— cars
 app.get("/cars", (req, res) => {
   connection.query(
     "SELECT id, name, image FROM brands",
@@ -201,14 +191,12 @@ app.get("/cars", (req, res) => {
           (err2, models) => {
             if (err2) return res.status(500).json({ error: err2.message });
 
-            // แปลง URL ภาพแบรนด์
             const rawBrand = brand.image || "";
             const brandFile = path.basename(rawBrand);
             const brandImg = rawBrand.startsWith("http")
               ? rawBrand
               : `${blobBase}/brands/${brandFile}`;
 
-            // แปลง URL ภาพโมเดล
             const mods = models.map(m => {
               let ci = m.car_image || "";
               if (ci && !ci.startsWith("http")) {
@@ -240,7 +228,6 @@ app.get("/cars", (req, res) => {
   );
 });
 
-// ——— CREATE CAR_MODEL ———
 app.post("/cars", (req, res) => {
   const { brand_id, model, price, description, car_image } = req.body;
   connection.query(
@@ -253,7 +240,6 @@ app.post("/cars", (req, res) => {
   );
 });
 
-// ——— UPDATE CAR_MODEL ———
 app.put("/cars/:id", (req, res) => {
   const { id } = req.params;
   const { brand_id, model, price, description, car_image } = req.body;
@@ -268,7 +254,6 @@ app.put("/cars/:id", (req, res) => {
   );
 });
 
-// ——— DELETE CAR_MODEL ———
 app.delete("/cars/:id", (req, res) => {
   const { id } = req.params;
   connection.query(
